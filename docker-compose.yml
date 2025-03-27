@@ -89,15 +89,11 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
+      - ./database/init:/docker-entrypoint-initdb.d
     networks:
       - traefik-public
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.db.rule=Host(`${DOMAIN_PGADMIN}`)"
-      - "traefik.http.routers.db.entrypoints=websecure"
-      - "traefik.http.routers.db.tls.certresolver=myresolver"
-      - "traefik.http.services.db.loadbalancer.server.port=5432"
+    expose:
+      - "5432"
 
   # pgAdmin for database management
   pgadmin:

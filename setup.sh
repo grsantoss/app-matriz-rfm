@@ -37,6 +37,13 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
+# Rename frontend folder to app if it exists
+if [ -d "frontend" ] && [ ! -d "app" ]; then
+    print_info "Renaming frontend folder to app..."
+    mv frontend app
+    print_success "Frontend folder renamed to app"
+fi
+
 # Create Traefik network if it doesn't exist
 if ! docker network ls | grep -q traefik-public; then
     print_info "Creating Traefik network..."
