@@ -4,23 +4,18 @@ services:
   # Frontend service - Express server to serve static files
   frontend:
     build:
-      context: ./frontend
+      context: ./app
       dockerfile: Dockerfile
     container_name: rfm-frontend
-    restart: unless-stopped
-    depends_on:
-      - auth
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    env_file:
-      - .env
+    restart: always
     networks:
-      - rfm-network
+      - traefik-public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`app.matrizrfm.com.br`)"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN_FRONTEND}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   # Backend service - FastAPI with RFM analysis
   backend:
@@ -28,20 +23,31 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: rfm-backend
-    restart: unless-stopped
-    depends_on:
-      - db
+    restart: always
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
     volumes:
-      - ./backend:/app
-      - ./storage:/app/storage
-    env_file:
-      - .env
+      - ./backend/storage:/app/storage
     networks:
-      - rfm-network
+      - traefik-public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.matrizrfm.com.br`)"
-      - "traefik.http.services.backend.loadbalancer.server.port=5173"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN_BACKEND}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
 
   # Auth service - Node.js Express for authentication
   auth:
@@ -49,73 +55,125 @@ services:
       context: ./auth
       dockerfile: Dockerfile
     container_name: rfm-auth
-    restart: unless-stopped
-    depends_on:
-      - db
-    volumes:
-      - ./auth:/app
-      - /app/node_modules
-    env_file:
-      - .env
+    restart: always
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
     networks:
-      - rfm-network
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`${DOMAIN_BACKEND}`) && PathPrefix(`/auth`)"
+      - "traefik.http.routers.auth.entrypoints=websecure"
+      - "traefik.http.routers.auth.tls.certresolver=myresolver"
+      - "traefik.http.services.auth.loadbalancer.server.port=3000"
 
   # Database service - PostgreSQL
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: rfm-db
-    restart: unless-stopped
+    restart: always
     environment:
-      POSTGRES_DB: rfmmatrix
-      POSTGRES_USER: rfmuser
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
+      - ./db/init:/docker-entrypoint-initdb.d
     networks:
-      - rfm-network
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.db.rule=Host(`${DOMAIN_PGADMIN}`)"
+      - "traefik.http.routers.db.entrypoints=websecure"
+      - "traefik.http.routers.db.tls.certresolver=myresolver"
+      - "traefik.http.services.db.loadbalancer.server.port=5432"
 
   # pgAdmin for database management
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
     container_name: rfm-pgadmin
-    restart: unless-stopped
+    restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
-      - rfm-network
+      - traefik-public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.matrizrfm.com.br`)"
+      - "traefik.http.routers.pgadmin.rule=Host(`${DOMAIN_PGADMIN}`)"
+      - "traefik.http.routers.pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin.tls.certresolver=myresolver"
       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
 
   # Traefik as reverse proxy
   traefik:
-    image: traefik:v2.9
+    image: traefik:v2.10
     container_name: rfm-traefik
-    restart: unless-stopped
-    command:
-      - "--api.insecure=false"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
+    restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./proxy/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./proxy/certificates:/certificates
+      - ./traefik:/etc/traefik
     networks:
-      - rfm-network
+      - traefik-public
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.network=traefik-public"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.email=your-email@matrizrfm.com.br"
+      - "--certificatesresolvers.myresolver.acme.storage=/etc/traefik/acme.json"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN_PORTAINER}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: rfm-portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`${DOMAIN_PORTAINER}`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls.certresolver=myresolver"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
 networks:
-  rfm-network:
-    driver: bridge
+  traefik-public:
+    external: true
 
 volumes:
   postgres_data:
-  pgadmin_data: 
+  pgadmin_data:
+  portainer_data: 
