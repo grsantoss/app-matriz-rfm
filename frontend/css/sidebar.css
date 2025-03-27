@@ -1,0 +1,314 @@
+/* RFM Matrix - Sidebar Styles */
+
+:root {
+    --white: #FFFFFF;
+    --light-gray: #F8F9FA;
+    --dark: #212529;
+    --accent: #5E17EB; /* Main purple color from logo */
+    --accent-secondary: #BB65F8; /* Light purple from logo */
+    --accent-tertiary: #4361EE; /* Blue from logo */
+    --accent-quaternary: #FF6B9D; /* Pink from logo */
+    --sidebar-width: 250px;
+    --header-height: 60px;
+    --transition-speed: 0.3s ease-in-out;
+}
+
+/* Sidebar Container */
+.l-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background-color: var(--white);
+    padding: 1rem 0.5rem;
+    z-index: 100;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    overflow-x: hidden;
+    transform: translateX(0);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+/* Sidebar Close Button */
+.sidebar-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--accent);
+    cursor: pointer;
+    transition: color var(--transition-speed);
+    display: none; /* Hidden on desktop */
+}
+
+.sidebar-close-btn:hover {
+    color: var(--accent-secondary);
+}
+
+/* Navigation Container */
+.nav {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+/* Logo and Navigation Links */
+.nav-logo,
+.nav-link {
+    display: flex;
+    align-items: center;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 0.8rem 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+/* Logo Styling */
+.nav-logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0.75rem 0;
+    color: var(--text-color);
+    font-weight: 600;
+    transition: color var(--transition-speed);
+}
+
+.nav-logo-icon {
+    width: calc(100% - 40px); /* Make the logo width the sidebar width minus 40px (20px on each side) */
+    margin: 0 auto;
+    display: block;
+    transition: all var(--transition-speed);
+}
+
+.nav-logo-name {
+    font-size: 1rem;
+    white-space: nowrap;
+    color: var(--white);
+    transition: color var(--transition-speed);
+}
+
+.nav-logo:hover .nav-logo-name {
+    color: var(--accent);
+}
+
+/* Navigation Links */
+.nav-link {
+    position: relative;
+    color: var(--accent);
+}
+
+.nav-link:hover {
+    color: var(--white);
+    background-color: rgba(94, 23, 235, 0.1);
+}
+
+.nav-link.active {
+    color: var(--white);
+    background-color: var(--accent);
+}
+
+.nav-icon {
+    font-size: 1.25rem;
+    margin-right: 1rem;
+}
+
+.nav-name {
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+/* Logout Link */
+.nav-logout {
+    margin-top: auto;
+}
+
+/* Simple Footer */
+.nav-footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--accent);
+    padding: 0.5rem;
+    margin-top: 1rem;
+    border-top: 1px solid rgba(94, 23, 235, 0.1);
+}
+
+/* Mobile Footer */
+.mobile-footer {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--accent);
+    color: var(--white);
+    text-align: center;
+    padding: 10px 0;
+    font-size: 0.75rem;
+    z-index: 99;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+@media screen and (max-width: 768px) {
+    /* Add margin to prevent content from being hidden behind the footer */
+    .container-fluid {
+        padding-bottom: 60px;
+    }
+    
+    .mobile-footer {
+        display: block;
+    }
+    
+    .l-navbar {
+        transform: translateX(-100%);
+        width: 100% !important;
+        height: 100vh !important;
+        padding: 1rem;
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .l-navbar.show {
+        transform: translateX(0);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        transition-delay: 0.1s;
+    }
+    
+    .nav {
+        flex-direction: column;
+        align-items: flex-start !important;
+        justify-content: flex-start;
+    }
+    
+    .nav-logo {
+        margin-bottom: 2rem;
+        justify-content: flex-start;
+        width: 100%;
+        padding-left: 2rem;
+    }
+    
+    .nav-logo-icon {
+        width: calc(100% - 40px); /* Keep same sizing principle on mobile */
+        margin: 0 auto;
+        display: block;
+    }
+    
+    .nav-list {
+        width: 100%;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding-left: 1rem;
+    }
+    
+    .nav-link {
+        width: 90% !important;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        display: flex !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+    }
+    
+    .nav-name {
+        white-space: normal !important;
+        overflow: visible !important;
+        width: auto !important;
+        font-size: 1rem !important;
+    }
+    
+    .nav-logout {
+        margin-top: 2rem;
+        margin-left: 1rem;
+    }
+    
+    .main-content {
+        margin-top: var(--header-height);
+        width: 100%;
+        padding: 15px;
+    }
+    
+    /* Header toggle button for mobile */
+    .header {
+        background-color: var(--light-gray);
+        height: var(--header-height);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 99;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        transition: background-color var(--transition-speed);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-toggle {
+        display: block;
+        cursor: pointer;
+    }
+    
+    .header-toggle .btn-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+    }
+    
+    .header-brand {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .header-brand span {
+        display: none;
+    }
+    
+    .nav-footer {
+        display: none;
+    }
+    
+    .sidebar-close-btn {
+        display: block; /* Show on mobile */
+    }
+}
+
+/* Small Mobile Adjustments */
+@media screen and (max-width: 576px) {
+    .nav-logo-name, .nav-name {
+        font-size: 0.8rem;
+    }
+    
+    .nav-icon, .nav-logo-icon {
+        font-size: 1.1rem;
+        margin-right: 0.75rem;
+    }
+    
+    .nav-link {
+        padding: 0.75rem;
+    }
+    
+    .nav-logo-icon {
+        width: calc(100% - 40px); /* Keep same sizing principle on small mobile */
+        margin: 0 auto;
+    }
+}
+
+/* Mobile Header Styles */
+@media screen and (max-width: 992px) {
+    .header {
+        left: 220px; /* Match sidebar width in tablet view */
+    }
+}

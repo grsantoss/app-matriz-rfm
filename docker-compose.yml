@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # Frontend service - Express server to serve static files
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rfm-frontend
+    restart: unless-stopped
+    depends_on:
+      - auth
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    networks:
+      - rfm-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`app.matrizrfm.com.br`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+  # Backend service - FastAPI with RFM analysis
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rfm-backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    networks:
+      - rfm-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.matrizrfm.com.br`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=5173"
+
+  # Auth service - Node.js Express for authentication
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: rfm-auth
+    restart: unless-stopped
+    depends_on:
+      - db
+    volumes:
+      - ./auth:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    networks:
+      - rfm-network
+
+  # Database service - PostgreSQL
+  db:
+    image: postgres:15
+    container_name: rfm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rfmmatrix
+      POSTGRES_USER: rfmuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - rfm-network
+
+  # pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: rfm-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - rfm-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.matrizrfm.com.br`)"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+
+  # Traefik as reverse proxy
+  traefik:
+    image: traefik:v2.9
+    container_name: rfm-traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./proxy/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./proxy/certificates:/certificates
+    networks:
+      - rfm-network
+
+networks:
+  rfm-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data: 
