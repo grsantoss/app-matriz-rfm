@@ -6,189 +6,108 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# General Configuration
-PROJECT_NAME = "Matriz RFM"
+# Project Configuration
+PROJECT_NAME = os.getenv("PROJECT_NAME", "Matriz RFM")
 ENV = os.getenv("ENV", "development")
-DEBUG = ENV == "development"
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# Domain Settings
+# Domain Configuration
 FRONTEND_DOMAIN = os.getenv("FRONTEND_DOMAIN", "app.matrizrfm.com.br")
 BACKEND_DOMAIN = os.getenv("BACKEND_DOMAIN", "api.matrizrfm.com.br")
 PGADMIN_DOMAIN = os.getenv("PGADMIN_DOMAIN", "pgadmin.matrizrfm.com.br")
+PORTAINER_DOMAIN = os.getenv("PORTAINER_DOMAIN", "painel.matrizrfm.com.br")
 
 # URLs
-FRONTEND_URL = f"http://{FRONTEND_DOMAIN}"
-BACKEND_URL = f"http://{BACKEND_DOMAIN}"
+FRONTEND_URL = f"https://{FRONTEND_DOMAIN}"
+BACKEND_URL = f"https://{BACKEND_DOMAIN}"
+PGADMIN_URL = f"https://{PGADMIN_DOMAIN}"
+PORTAINER_URL = f"https://{PORTAINER_DOMAIN}"
 
 # Database Configuration
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "db"),
-    "port": os.getenv("DB_PORT", 5432),
-    "user": os.getenv("DB_USER", "rfmuser"),
-    "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "rfmmatrix"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME", "matriz_rfm")
 }
 DATABASE_URL = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
 
 # JWT Configuration
-JWT_SECRET = os.getenv("JWT_SECRET", "")
-JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
+JWT_CONFIG = {
+    "secret": os.getenv("JWT_SECRET"),
+    "algorithm": os.getenv("JWT_ALGORITHM", "HS256"),
+    "expiration": os.getenv("JWT_EXPIRATION", "24h")
+}
 
 # Email Configuration (Amazon SES)
 EMAIL_CONFIG = {
     "host": os.getenv("SMTP_HOST", "email-smtp.us-east-1.amazonaws.com"),
-    "port": os.getenv("SMTP_PORT", 587),
-    "user": os.getenv("SMTP_USER", ""),
-    "password": os.getenv("SMTP_PASS", ""),
-    "from_email": os.getenv("EMAIL_FROM", "no-reply@matrizrfm.com.br"),
+    "port": int(os.getenv("SMTP_PORT", "587")),
+    "username": os.getenv("SMTP_USERNAME"),
+    "password": os.getenv("SMTP_PASSWORD")
 }
 
 # OpenAI Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = "gpt-4-turbo"
+OPENAI_CONFIG = {
+    "api_key": os.getenv("OPENAI_API_KEY"),
+    "model": os.getenv("OPENAI_MODEL", "gpt-4")
+}
+
+# Auth Service Configuration
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", f"{BACKEND_URL}/auth")
 
 # RFM Analysis Rules
 RFM_RULES = {
     "segments": {
         "champions": {
-            "min_recency": 4,
-            "min_frequency": 4,
-            "min_monetary": 4,
-            "description": "Clientes que compraram recentemente, compram com frequência e gastam muito. Eles são seus melhores clientes."
+            "r": {"min": 4, "max": 5},
+            "f": {"min": 4, "max": 5},
+            "m": {"min": 4, "max": 5}
         },
         "loyal_customers": {
-            "min_recency": 3,
-            "min_frequency": 3,
-            "min_monetary": 3,
-            "description": "Clientes que compram regularmente. Respondem bem a programas de fidelidade."
-        },
-        "potential_loyalists": {
-            "min_recency": 4,
-            "min_frequency": 2,
-            "min_monetary": 2,
-            "max_frequency": 3,
-            "max_monetary": 3,
-            "description": "Clientes recentes que gastam um bom valor. Podem ser convertidos em clientes fiéis com atenção adequada."
-        },
-        "new_customers": {
-            "min_recency": 4,
-            "max_frequency": 1,
-            "description": "Clientes que compraram recentemente, mas não compraram com frequência."
-        },
-        "promising": {
-            "min_recency": 3,
-            "max_frequency": 2,
-            "min_monetary": 3,
-            "description": "Clientes recentes que gastam um bom valor, mas não compram com frequência."
-        },
-        "needing_attention": {
-            "min_recency": 2,
-            "max_recency": 3,
-            "min_frequency": 2,
-            "max_frequency": 3,
-            "min_monetary": 2,
-            "max_monetary": 3,
-            "description": "Clientes médios em termos de recência, frequência e valor monetário."
-        },
-        "about_to_sleep": {
-            "max_recency": 2,
-            "min_frequency": 2,
-            "max_frequency": 3,
-            "min_monetary": 2,
-            "max_monetary": 3,
-            "description": "Clientes que não compram há algum tempo, mas têm frequência e valor médios."
-        },
-        "cant_lose": {
-            "max_recency": 2,
-            "min_frequency": 3,
-            "min_monetary": 3,
-            "description": "Clientes que não compram há algum tempo, mas têm alta frequência e valor."
+            "r": {"min": 3, "max": 5},
+            "f": {"min": 3, "max": 5},
+            "m": {"min": 3, "max": 5}
         },
         "at_risk": {
-            "max_recency": 2,
-            "min_frequency": 2,
-            "max_frequency": 3,
-            "description": "Clientes que não compram há algum tempo e têm frequência média."
-        },
-        "hibernating": {
-            "max_recency": 1,
-            "max_frequency": 2,
-            "max_monetary": 2,
-            "description": "Clientes que não compram há muito tempo, têm baixa frequência e baixo valor."
+            "r": {"min": 1, "max": 2},
+            "f": {"min": 3, "max": 5},
+            "m": {"min": 3, "max": 5}
         },
         "lost": {
-            "max_recency": 1,
-            "max_frequency": 1,
-            "description": "Clientes que não compram há muito tempo e têm baixa frequência."
+            "r": {"min": 1, "max": 2},
+            "f": {"min": 1, "max": 2},
+            "m": {"min": 1, "max": 2}
         }
     },
-    "score_mapping": {
+    "scoring": {
         "recency": {
-            "invert": True,  # Lower recency days -> higher score
-            "quartiles": 4
+            "invert": True,
+            "quartiles": {
+                "q1": 5, "q2": 4, "q3": 3, "q4": 2, "q5": 1
+            }
         },
         "frequency": {
-            "invert": False,  # Higher frequency -> higher score
-            "quartiles": 4
+            "invert": False,
+            "quartiles": {
+                "q1": 1, "q2": 2, "q3": 3, "q4": 4, "q5": 5
+            }
         },
         "monetary": {
-            "invert": False,  # Higher monetary -> higher score
-            "quartiles": 4
+            "invert": False,
+            "quartiles": {
+                "q1": 1, "q2": 2, "q3": 3, "q4": 4, "q5": 5
+            }
         }
     }
 }
 
 # OpenAI Prompts
-AI_PROMPTS = {
-    "rfm_insights": """
-    Você é um especialista em análise RFM (Recência, Frequência, Monetário) e marketing.
-    
-    Baseado na seguinte análise RFM:
-    
-    {analysis_summary}
-    
-    Forneça insights estratégicos e recomendações de marketing específicas para cada segmento de clientes.
-    
-    Organize sua resposta da seguinte forma:
-    1. Uma visão geral da situação atual da empresa com base na análise RFM
-    2. Insights importantes sobre os principais segmentos de clientes
-    3. Recomendações de marketing e ações específicas para cada segmento
-    4. Priorização de esforços (quais segmentos devem receber mais atenção)
-    5. Métricas a serem monitoradas para avaliar o sucesso das ações
-    
-    Seja específico, prático e estratégico em suas recomendações.
-    """,
-    
-    "churn_prediction": """
-    Você é um especialista em prevenção de churn (abandono de clientes).
-    
-    Com base nos seguintes dados de previsão de churn:
-    
-    {churn_data}
-    
-    Forneça insights e recomendações para:
-    1. Identificar os padrões principais que levam ao churn
-    2. Estratégias específicas para reduzir o churn em cada segmento de risco
-    3. Abordagens proativas para reter clientes de alto valor
-    
-    Inclua exemplos de ações específicas e campanhas personalizadas.
-    """,
-    
-    "ltv_optimization": """
-    Você é um especialista em Lifetime Value (LTV) de clientes.
-    
-    Com base na seguinte análise de LTV:
-    
-    {ltv_data}
-    
-    Forneça insights e estratégias para:
-    1. Aumentar o LTV dos diferentes segmentos de clientes
-    2. Identificar oportunidades de cross-selling e upselling
-    3. Estratégias de retenção específicas para maximizar o valor no longo prazo
-    
-    Inclua exemplos de empresas que implementaram estratégias semelhantes com sucesso.
-    """
+OPENAI_PROMPTS = {
+    "rfm_insights": "Generate strategic insights based on RFM analysis data",
+    "churn_insights": "Generate strategic insights based on churn prediction data",
+    "ltv_insights": "Generate strategic insights based on LTV optimization data"
 }
 
 # Amazon SES Configuration for Email
